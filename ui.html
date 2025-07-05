@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Track Code</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 15px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Make body take full viewport height */
+            box-sizing: border-box; /* Include padding in height calculation */
+            background-color: #f8f8f8;
+            font-size: 13px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        /* Common style for output areas */
+        .output-area {
+            flex-grow: 1; /* Allow text area to take available space */
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            background-color: #fff;
+            overflow-y: auto; /* Ensure scrollability */
+            min-height: 100px; /* Minimum height for output */
+        }
+        #output { /* Textarea specific */
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: none; /* Disable manual resize */
+            display: block; /* Default visible */
+        }
+        #visual-output { /* Div for visual elements */
+            font-size: 12px;
+            display: none; /* Hidden by default */
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            /* margin-top: auto; Removed to allow settings section to push it naturally */
+            padding-top: 10px; /* Space above buttons */
+            align-items: flex-end;
+            flex-shrink: 0; /* Prevent button group from shrinking */
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            background-color: #f0f0f0 !important; /* Ensure disabled style overrides */
+            color: #aaa !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+        #extract {
+            background-color: #0d99ff;
+            color: white;
+            flex-grow: 1;
+        }
+        #copy, #save {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        #status {
+            margin-top: 10px; /* Space between settings and status */
+            font-size: 12px;
+            color: #666;
+            min-height: 1.2em; /* Ensure space for one line of text */
+            flex-shrink: 0; /* Prevent status from shrinking */
+            text-align: center;
+        }
+        .error { color: #d93025; font-weight: bold; }
+        .success { color: #1e8e3e; }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-toggle { background-color: #07c284; color: white; display: flex; align-items: center; justify-content: center; }
+        .dropdown-toggle .arrow { margin-left: 8px; font-size: 0.8em; transition: transform 0.2s ease-in-out; }
+        .dropdown-menu { display: none; position: absolute; bottom: calc(100% + 5px); left: 0; background-color: #ffffff; min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15); z-index: 1000; border-radius: 4px; border: 1px solid #e0e0e0; padding: 5px 0; }
+        .dropdown-menu a { color: #333; padding: 10px 15px; text-decoration: none; display: block; font-size: 13px; white-space: nowrap; }
+        .dropdown-menu a:hover { background-color: #f0f0f0; }
+        .dropdown.open .dropdown-menu { display: block; }
+        .dropdown.open .dropdown-toggle .arrow { transform: rotate(180deg); }
+
+        /* Visual Color Styles */
+        .color-item { display: flex; align-items: center; margin-bottom: 8px; padding: 6px 8px; border-radius: 3px; background-color: #f9f9f9; border: 1px solid #eee; }
+        .color-swatch-container { width: 28px; height: 28px; margin-right: 12px; border: 1px solid #ccc; border-radius: 3px; background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%); background-size: 12px 12px; background-position: 0 0, 0 6px, 6px -6px, -6px 0px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .color-swatch { width: 100%; height: 100%; }
+        .color-details { display: flex; flex-direction: column; gap: 1px; font-size: 11px; color: #444; }
+        .color-details span { display: block; }
+        .color-hex { font-weight: 600; font-family: monospace; color: #111; }
+        .color-source { font-style: italic; color: #777; }
+
+        /* New styles for image export options */
+        .settings-section {
+            margin-bottom: 10px; /* Space below settings */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            flex-shrink: 0; /* Prevent settings section from shrinking */
+        }
+        .settings-section h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .settings-section label, .settings-section .label-like {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        .settings-section input[type="text"],
+        .settings-section input[type="number"],
+        .settings-section select {
+            width: 100%; /* Full width within padding */
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .settings-section .radio-group label {
+            display: inline-block;
+            margin-right: 15px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .settings-section .radio-group input[type="radio"] {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .settings-section button {
+            font-size: 12px;
+            padding: 6px 10px;
+            background-color: #6c757d;
+            color: white;
+            margin-top: 4px; /* Space above button */
+        }
+        #jpegQualitySetting { display: none; } /* Hidden by default */
+    </style>
+</head>
+<body>
+    <h2>Selected Element Data / Assets</h2>
+    <textarea id="output" class="output-area" readonly placeholder="Select an element. Click 'Extract Data' or use 'Extract Assets' menu."></textarea>
+    <div id="visual-output" class="output-area" style="display: none;"></div>
+
+    <div class="settings-section">
+        <h3>Image Export Settings</h3>
+        <div class="label-like">Format:</div>
+        <div class="radio-group">
+            <label><input type="radio" name="imageFormat" value="PNG" id="formatPNG" checked> PNG</label>
+            <label><input type="radio" name="imageFormat" value="JPG" id="formatJPG"> JPEG</label>
+        </div>
+        <div id="jpegQualitySetting">
+            <label for="jpegQuality">JPEG Quality (1-100):</label>
+            <input type="number" id="jpegQuality" value="80" min="1" max="100">
+        </div>
+        <label for="saveLocationPrefix">Save Location Prefix (optional, e.g., "folder/"):</label>
+        <input type="text" id="saveLocationPrefix" placeholder="e.g., assets/icons/">
+        <button id="savePrefsButton">Set as Defaults</button>
+    </div>
+
+    <div id="status">Select an element in Figma.</div>
+
+    <div class="button-group">
+        <button id="extract">Extract Data</button>
+        <div class="dropdown">
+            <button id="extract-assets-btn" class="dropdown-toggle">
+                Extract Assets <span class="arrow">▾</span>
+            </button>
+            <div id="assets-dropdown-menu" class="dropdown-menu">
+                <a href="#" data-asset-type="images">Images (as PNG/JPG)</a>
+                <a href="#" data-asset-type="texts">Texts</a>
+                <a href="#" data-asset-type="icons">Icons (as SVG)</a>
+                <a href="#" data-asset-type="fonts">Fonts (Names)</a>
+                <a href="#" data-asset-type="colors">Colours</a>
+                <a href="#" data-asset-type="shapes">Shapes (as SVG)</a>
+            </div>
+        </div>
+        <button id="copy" disabled>Copy Data</button>
+        <button id="save" disabled>Save as TXT</button>
+    </div>
+
+    <script>
+        const extractButton = document.getElementById('extract');
+        const copyButton = document.getElementById('copy');
+        const saveButton = document.getElementById('save');
+        const outputArea = document.getElementById('output');
+        const visualOutputArea = document.getElementById('visual-output');
+        const statusArea = document.getElementById('status');
+
+        const extractAssetsButton = document.getElementById('extract-assets-btn');
+        const assetsDropdownMenu = document.getElementById('assets-dropdown-menu');
+        const dropdownContainer = extractAssetsButton.parentElement;
+
+        // Image export settings elements
+        const formatPNG = document.getElementById('formatPNG');
+        const formatJPG = document.getElementById('formatJPG');
+        const jpegQualitySettingDiv = document.getElementById('jpegQualitySetting');
+        const jpegQualityInput = document.getElementById('jpegQuality');
+        const saveLocationPrefixInput = document.getElementById('saveLocationPrefix');
+        const savePrefsButton = document.getElementById('savePrefsButton');
+        const imageSettingsElements = [formatPNG, formatJPG, jpegQualityInput, saveLocationPrefixInput, savePrefsButton];
+
+
+        let currentSelectionCount = 0;
+        let exportInProgress = false; // Flag to manage UI during multi-file export
+        let totalImagesToExport = 0;
+        let imagesExportedCount = 0;
+
+        function updateButtonStates() {
+            const hasOutputText = outputArea.value.trim().length > 0 && outputArea.style.display !== 'none';
+            copyButton.disabled = !hasOutputText || exportInProgress;
+            saveButton.disabled = !hasOutputText || exportInProgress;
+            extractButton.disabled = currentSelectionCount !== 1 || exportInProgress; // General extract only for single selection
+            extractAssetsButton.disabled = currentSelectionCount === 0 || exportInProgress; // Asset extract needs at least one
+            imageSettingsElements.forEach(el => el.disabled = exportInProgress);
+        }
+
+        function switchToTextView() {
+            visualOutputArea.style.display = 'none';
+            visualOutputArea.innerHTML = '';
+            outputArea.style.display = 'block';
+        }
+
+        function switchToVisualView() {
+            outputArea.style.display = 'none';
+            // outputArea.value = ''; // Don't clear log if user switches view for other reasons
+            visualOutputArea.style.display = 'block';
+        }
+        
+        function logToOutput(message, clear = false) {
+            if (outputArea.style.display === 'none') switchToTextView(); // Ensure text view is active for logging
+            if (clear) {
+                outputArea.value = "";
+            }
+            outputArea.value += message + "\n";
+            outputArea.scrollTop = outputArea.scrollHeight; // Auto-scroll
+        }
+
+        function toggleJpegQualityInput() {
+            jpegQualitySettingDiv.style.display = formatJPG.checked ? 'block' : 'none';
+        }
+        formatPNG.addEventListener('change', toggleJpegQualityInput);
+        formatJPG.addEventListener('change', toggleJpegQualityInput);
+        
+
+        savePrefsButton.onclick = () => {
+            const prefs = {
+                imageFormat: formatJPG.checked ? 'JPG' : 'PNG',
+                jpegQuality: parseInt(jpegQualityInput.value) || 80,
+                savePrefix: saveLocationPrefixInput.value.trim()
+            };
+            parent.postMessage({ pluginMessage: { type: 'save-preferences', data: prefs } }, '*');
+            statusArea.textContent = 'Saving preferences...';
+            statusArea.className = '';
+        };
+
+        parent.postMessage({ pluginMessage: { type: 'get-preferences' } }, '*');
+
+        extractButton.onclick = () => {
+            if (currentSelectionCount !== 1) {
+                statusArea.textContent = 'Please select a single element for data extraction.';
+                statusArea.className = 'error';
+                return;
+            }
+            switchToTextView();
+            logToOutput('Requesting general data extraction...', true);
+            statusArea.textContent = 'Extracting general data...';
+            statusArea.className = '';
+            exportInProgress = true; updateButtonStates();
+            parent.postMessage({ pluginMessage: { type: 'extract-data' } }, '*');
+        };
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = 'fixed'; textArea.style.top = '-9999px'; textArea.style.left = '-9999px'; textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus(); textArea.select();
+            let successful = false;
+            try {
+                successful = document.execCommand('copy');
+                statusArea.textContent = successful ? 'Copied (fallback)!' : 'Fallback copy failed.';
+                statusArea.className = successful ? 'success' : 'error';
+            } catch (err) {
+                statusArea.textContent = 'Fallback copy error. See console.'; statusArea.className = 'error';
+            } finally {
+                document.body.removeChild(textArea); window.getSelection()?.removeAllRanges();
+            }
+            return successful;
+        }
+
+        copyButton.onclick = () => {
+            const textToCopy = outputArea.value;
+            if (!textToCopy) { statusArea.textContent = 'Nothing to copy.'; statusArea.className = 'error'; return; }
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    statusArea.textContent = 'Copied to clipboard!'; statusArea.className = 'success'; window.getSelection()?.removeAllRanges();
+                }).catch(err => fallbackCopyTextToClipboard(textToCopy));
+            } else { fallbackCopyTextToClipboard(textToCopy); }
+        };
+
+        saveButton.onclick = () => {
+            if (!outputArea.value) return;
+            try {
+                const blob = new Blob([outputArea.value], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                let filename = 'figma-extracted-data.txt';
+                try { const dataObj = JSON.parse(outputArea.value); if (dataObj.name) { filename = dataObj.name.replace(/[^a-z0-9_\-.]/gi, '_').toLowerCase() + '.txt'; } } catch (e) { /* Ignore */ }
+                link.download = filename;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+                statusArea.textContent = 'File saved!'; statusArea.className = 'success';
+            } catch (err) { statusArea.textContent = 'Save failed. See console.'; statusArea.className = 'error'; }
+        };
+
+        if (extractAssetsButton && assetsDropdownMenu && dropdownContainer) {
+            extractAssetsButton.onclick = (event) => { event.stopPropagation(); dropdownContainer.classList.toggle('open'); };
+            document.addEventListener('click', (event) => { if (!dropdownContainer.contains(event.target) && dropdownContainer.classList.contains('open')) { dropdownContainer.classList.remove('open'); } });
+            assetsDropdownMenu.querySelectorAll('a').forEach(item => {
+                item.onclick = (event) => {
+                    event.preventDefault();
+                    if (currentSelectionCount === 0) { statusArea.textContent = 'Please select an element in Figma first.'; statusArea.className = 'error'; dropdownContainer.classList.remove('open'); return; }
+
+                    const assetType = item.dataset.assetType;
+                    const assetTypeText = item.textContent;
+                    
+                    exportInProgress = true; updateButtonStates();
+
+                    if (assetType === 'colors') {
+                        switchToVisualView(); visualOutputArea.innerHTML = `<p>Extracting ${assetTypeText} from selection...</p>`;
+                    } else {
+                        switchToTextView(); logToOutput(`Requesting ${assetTypeText} from selection...`, assetType !== 'images'); // Clear log for new non-image asset type
+                    }
+                    if (assetType === 'images') {
+                         logToOutput(`Format: ${formatJPG.checked ? 'JPEG' : 'PNG'}, Prefix: '${saveLocationPrefixInput.value.trim() || "(none)"}'`, true); // Clear log for new image batch
+                         totalImagesToExport = 0; imagesExportedCount = 0; // Reset counters
+                    }
+
+                    statusArea.textContent = `Requesting ${assetTypeText}...`; statusArea.className = '';
+                    parent.postMessage({ pluginMessage: { type: 'extract-specific-asset', assetType: assetType } }, '*');
+                    dropdownContainer.classList.remove('open');
+                };
+            });
+        }
+
+        function downloadAsset(data, filename, mimeType) {
+            let blobData = data;
+            if (mimeType === 'image/svg+xml' && data instanceof Uint8Array) {
+                blobData = new TextDecoder('utf-8').decode(data);
+            }
+            const blob = new Blob([blobData], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = filename;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+            console.log(`Download triggered for: ${filename}`);
+        }
+
+
+        window.onmessage = (event) => {
+            const message = event.data.pluginMessage;
+            if (!message) return;
+
+            console.log("UI received message:", message);
+
+            let processCompleted = false; // Flag to see if a main process ended
+
+            switch (message.type) {
+                case 'display-data':
+                    switchToTextView(); outputArea.value = message.data;
+                    statusArea.textContent = 'Data extracted successfully.'; statusArea.className = 'success';
+                    processCompleted = true;
+                    break;
+                case 'error':
+                    logToOutput(`ERROR: ${message.message}`); // Append errors to log
+                    statusArea.textContent = message.message; statusArea.className = 'error';
+                    if (totalImagesToExport > 0) { // If it was an image export error
+                        imagesExportedCount++; // Count this error as "processed" to not stall the batch
+                        if (imagesExportedCount >= totalImagesToExport) {
+                            processCompleted = true; // Batch finished (with errors)
+                            logToOutput(`Image export batch finished with some errors.`);
+                        } else {
+                            statusArea.textContent = `Error exporting. Progress: ${imagesExportedCount}/${totalImagesToExport}.`;
+                        }
+                    } else {
+                        processCompleted = true; // General error, process ends
+                    }
+                    break;
+                case 'info':
+                    logToOutput(`INFO: ${message.message}`); // Append info messages to log
+                    statusArea.textContent = message.message; statusArea.className = '';
+                    // Info messages usually don't mean the end of a process like exportInProgress
+                    break;
+
+                case 'preferences-loaded':
+                    if (message.data) {
+                        if (message.data.imageFormat === 'JPG') { formatJPG.checked = true; }
+                        else { formatPNG.checked = true; }
+                        jpegQualityInput.value = message.data.jpegQuality || 80;
+                        saveLocationPrefixInput.value = message.data.savePrefix || "";
+                        statusArea.textContent = 'Preferences loaded.';
+                    } else { statusArea.textContent = 'No saved preferences found. Using defaults.'; }
+                    toggleJpegQualityInput(); // Update UI based on loaded prefs
+                    break;
+                case 'preferences-saved':
+                    statusArea.textContent = message.message || 'Preferences saved!'; statusArea.className = 'success';
+                    break;
+
+                case 'nodes-with-images-found':
+                    switchToTextView();
+                    const nodesToExport = message.data;
+                    if (nodesToExport && nodesToExport.length > 0) {
+                        totalImagesToExport = nodesToExport.length; imagesExportedCount = 0;
+                        exportInProgress = true; updateButtonStates();
+
+                        logToOutput(`Found ${nodesToExport.length} node(s) with images. Preparing to export...`);
+                        statusArea.textContent = `Found ${nodesToExport.length} image(s). Exporting 0/${totalImagesToExport}...`;
+
+                        const selectedFormat = formatJPG.checked ? 'JPG' : 'PNG';
+                        const jpegQuality = parseInt(jpegQualityInput.value) || 80;
+                        const prefix = saveLocationPrefixInput.value.trim();
+
+                        nodesToExport.forEach(nodeInfo => {
+                            let ext = selectedFormat.toLowerCase();
+                            let safeNodeName = (nodeInfo.nodeName || 'image').replace(/[^a-z0-9_\-]/gi, '_').substring(0, 50);
+                            const uniquePart = nodeInfo.nodeId.replace(/[:|,]/g, '_'); // Figma IDs can contain : or ,
+                            
+                            let finalFileName = `${safeNodeName}_${uniquePart}.${ext}`;
+                            if (prefix) {
+                                finalFileName = (prefix.endsWith('/') ? prefix : prefix + '/') + finalFileName;
+                            }
+
+                            logToOutput(`Requesting export: ${nodeInfo.nodeName} (ID: ${nodeInfo.nodeId}) as ${finalFileName}`);
+                            parent.postMessage({ pluginMessage: { type: 'export-node-as-image', nodeId: nodeInfo.nodeId, fileName: finalFileName, format: selectedFormat, quality: jpegQuality }}, '*');
+                        });
+                    } else {
+                        logToOutput("No exportable nodes with images found in the selection.");
+                        statusArea.textContent = "No images found to export.";
+                        processCompleted = true; // No images found, so this "process" is done
+                    }
+                    break;
+
+                case 'image-bytes-ready':
+                    const { bytes, fileName, format } = message;
+                    let mimeType = 'application/octet-stream';
+                    if (format === 'PNG') mimeType = 'image/png';
+                    else if (format === 'JPG' || format === 'JPEG') mimeType = 'image/jpeg';
+
+                    downloadAsset(bytes, fileName, mimeType);
+                    logToOutput(`Downloaded: ${fileName}`);
+                    
+                    imagesExportedCount++;
+                    statusArea.textContent = `Exporting ${imagesExportedCount}/${totalImagesToExport}... Downloaded ${fileName}.`;
+
+                    if (imagesExportedCount >= totalImagesToExport) {
+                        statusArea.textContent = `All ${totalImagesToExport} images exported. Check browser downloads.`;
+                        statusArea.className = 'success';
+                        processCompleted = true;
+                    }
+                    break;
+
+                case 'assets-extracted': // For non-image assets
+                    const assetTypeDisplay = message.assetType.charAt(0).toUpperCase() + message.assetType.slice(1);
+                    statusArea.textContent = `${assetTypeDisplay} processed.`; statusArea.className = 'success';
+                    processCompleted = true;
+
+                    if (message.assetType === 'icons' || message.assetType === 'shapes') {
+                        switchToTextView();
+                        if (message.data && message.data.length > 0) {
+                            logToOutput(`Found ${message.data.length} ${message.assetType.toLowerCase()}.\nInitiating downloads...\n`);
+                            message.data.forEach(asset => { downloadAsset(asset.data, asset.name, 'image/svg+xml'); logToOutput(`Downloading: ${asset.name}`); });
+                            statusArea.textContent = `Downloading ${message.data.length} ${assetTypeDisplay}. Check browser downloads.`;
+                        } else { logToOutput(`No ${message.assetType.toLowerCase()} found to download.`); statusArea.textContent = `No ${assetTypeDisplay} found.`; }
+                    } else if (message.assetType === 'texts' || message.assetType === 'fonts') {
+                        switchToTextView(); let content = '';
+                        if (message.assetType === 'texts') {
+                            content = `Extracted Texts (${message.data.length}):\n\n`;
+                            message.data.forEach(textItem => { content += `--- From: ${textItem.name || 'Unnamed Text'} ---\n${textItem.content}\n\n`; });
+                        } else {
+                            content = `Extracted Fonts (${message.data.length}):\n\n`;
+                            message.data.forEach(font => { content += `Family: ${font.family}, Style: ${font.style} (Source Node: ${font.sourceNode || 'N/A'})\n`; });
+                        }
+                        if (message.data && message.data.length > 0) { outputArea.value = content; }
+                        else { outputArea.value = `No ${message.assetType.toLowerCase()} found in the selection.`; }
+                    } else if (message.assetType === 'colors') {
+                        switchToVisualView(); visualOutputArea.innerHTML = '';
+                        if (message.data && message.data.length > 0) {
+                            message.data.forEach(color => {
+                                const itemDiv = document.createElement('div'); itemDiv.className = 'color-item';
+                                const swatchContainer = document.createElement('div'); swatchContainer.className = 'color-swatch-container';
+                                const swatchDiv = document.createElement('div'); swatchDiv.className = 'color-swatch';
+                                swatchDiv.style.backgroundColor = `rgba(${Math.round(color.rgb.r * 255)}, ${Math.round(color.rgb.g * 255)}, ${Math.round(color.rgb.b * 255)}, ${color.opacity})`;
+                                swatchContainer.appendChild(swatchDiv);
+                                const detailsDiv = document.createElement('div'); detailsDiv.className = 'color-details';
+                                const hexSpan = document.createElement('span'); hexSpan.className = 'color-hex'; hexSpan.textContent = color.hex.toUpperCase(); detailsDiv.appendChild(hexSpan);
+                                const opacitySpan = document.createElement('span'); opacitySpan.className = 'color-opacity'; opacitySpan.textContent = `Opacity: ${Math.round(color.opacity * 100)}%`; detailsDiv.appendChild(opacitySpan);
+                                const typeSpan = document.createElement('span'); typeSpan.className = 'color-type'; typeSpan.textContent = `Type: ${color.type}`; detailsDiv.appendChild(typeSpan);
+                                if (color.sourceNode) { const sourceSpan = document.createElement('span'); sourceSpan.className = 'color-source'; sourceSpan.textContent = `Source: ${color.sourceNode}`; detailsDiv.appendChild(sourceSpan); }
+                                itemDiv.appendChild(swatchContainer); itemDiv.appendChild(detailsDiv); visualOutputArea.appendChild(itemDiv);
+                            });
+                        } else { visualOutputArea.innerHTML = "<p>No distinct solid colors found in the selection.</p>"; }
+                    }
+                    break;
+                
+                case 'no-selection':
+                    statusArea.textContent = 'No element selected in Figma.'; statusArea.className = '';
+                    currentSelectionCount = 0;
+                    if (exportInProgress) { // If a batch export was ongoing and selection lost, stop it.
+                       logToOutput("WARN: Selection lost during export. Process halted.");
+                       processCompleted = true;
+                    }
+                    break;
+                case 'selection-available':
+                    currentSelectionCount = message.count || 0; // Ensure count is a number
+                    if (currentSelectionCount === 1) { statusArea.textContent = '1 element selected.'; }
+                    else if (currentSelectionCount > 1) { statusArea.textContent = `${currentSelectionCount} elements selected. (Asset extraction typically uses the first)`; }
+                    else { statusArea.textContent = 'Selection changed, but count is zero or invalid.'; } // Should not happen if no-selection is handled
+                    statusArea.className = '';
+                    break;
+            }
+
+            if (processCompleted) {
+                exportInProgress = false;
+                totalImagesToExport = 0;
+                imagesExportedCount = 0;
+            }
+            updateButtonStates();
+        };
+
+        // Initial setup
+        toggleJpegQualityInput(); // Set initial visibility of JPEG quality
+        updateButtonStates(); // Set initial button disabled states
+    </script>
+</body>
+</html>
